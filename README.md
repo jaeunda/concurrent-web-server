@@ -5,19 +5,19 @@ A high-performance web server implemented with C, supporting multiple concurrenc
 ### Project Structure
 ```
 concurrent-web-server
-├── Makefile      # Build System
-├── README.md     # Project Overview
-├── docs          # Documentation and Reports
-│   ├── issues
+├── Makefile      		# Build System
+├── README.md     		# Project Overview
+├── docs          		# Documentation and Reports
+│   ├── troubleshooting
 │   └── notes
-├── public        # Static files served by the web server
-├── src           # Source Code
-│   ├── http          # HTTP protocol handling code
-│   ├── include       # Header files
-│   ├── server        # Core server logic
-│   ├── socket        # Low-level socket and network-related functions
-│   └── util          # Utility functions
-└── tests         # Test code and scripts
+├── public        		# Static files served by the web server
+├── src           		# Source Code
+│   ├── http      		    # HTTP protocol handling code
+│   ├── include       		# Header files
+│   ├── server        		# Core server logic
+│   ├── socket        		# Low-level socket and network-related functions
+│   └── util          		# Utility functions
+└── tests         		# Test code and scripts
 ```
 
 ### Models & Progress
