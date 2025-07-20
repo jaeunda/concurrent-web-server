@@ -20,18 +20,23 @@ concurrent-web-server
 └── tests         		# Test code and scripts
 ```
 
-### Models & Progress
+### Modules & Progress
 
-| Module                                      | Status        |
-|--------------------------------------------|---------------|
-| Blocking TCP Server                        | Planned        |
-| Multi-threaded Server                      | Planned        |
-| Epoll-based Concurrent Server              | Planned        |
-| Benchmarking & Load Testing                | Planned        |
-| Performance Analysis & Visualization       | Planned       |
+| Module                             | Status  |
+| ---------------------------------- | ------- |
+| Core Module Development            | Planned |
+| Config Module Development          | Planned |
+| Socket Module Implementation       | Planned |
+| HTTP Module Implementation         | Planned |
+| Client Module Development          | Planned |
+| Server Module Implementation       | Planned |
+| Thread Module Implementation       | Planned |
+| Thread Pool Module Implementation  | Planned |
+| Epoll Module Implementation        | Planned |
+| Benchmarking Module Implementation | Planned |
 
 
-- See [`docs/project-progress.md`](docs/project-progress.md) for the full checklist.
+- See [Project Board](https://github.com/users/jaeunda/projects/3) for the detailed development progress
 
 ### Build & Run
 will be added after initial implemented is complete.
