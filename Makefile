@@ -1,5 +1,5 @@
 CC = gcc
-BASE_CFLAGS = -Wall -Wextra -g -I$(SRCDIR)/include -MMD -MP
+BASE_CFLAGS = -Wall -Wextra -g -I$(SRCDIR)/include -I$(SRCDIR)/include/util -MMD -MP
 LDFLAGS = -pthread
 
 # -Isrc/include: 헤더 파일 경로
