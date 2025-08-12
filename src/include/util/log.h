@@ -1,11 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <time.h>
-
 typedef enum {
     LOG_LEVEL_DEBUG = 0,
     LOG_LEVEL_INFO,

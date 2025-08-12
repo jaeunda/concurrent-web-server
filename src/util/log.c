@@ -1,5 +1,12 @@
 #include "../include/util/log.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <time.h>
+
+static void get_timestamp(char *, size_t);
+
 static void get_timestamp(char *buffer, size_t size){
     char timestamp[128];
     time_t now = time(NULL);
