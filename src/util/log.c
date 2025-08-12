@@ -19,7 +19,7 @@ static void get_timestamp(char *buffer, size_t size){
         fprintf(stderr, "strftime returned 0\n");
         exit(EXIT_FAILURE);
     }
-    if (snprintf(buffer, size, "[%s]", timestamp) > size){
+    if (snprintf(buffer, size, "[%s]", timestamp) > (int)size){
         fprintf(stderr, "timestamp too long\n");
         exit(EXIT_FAILURE);
     }
