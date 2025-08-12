@@ -24,7 +24,7 @@ concurrent-web-server
 
 | Module                             | Status  |
 | ---------------------------------- | ------- |
-| Core Module Development            | Planned |
+| Core Module Development            | In Progress |
 | Config Module Development          | Planned |
 | Socket Module Implementation       | Planned |
 | HTTP Module Implementation         | Planned |
@@ -40,3 +40,4 @@ concurrent-web-server
 
 ### Build & Run
 will be added after initial implemented is complete.
+
