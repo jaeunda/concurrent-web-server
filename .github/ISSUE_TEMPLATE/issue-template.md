@@ -1,3 +1,7 @@
+---
+name: Issue Template
+title: "[]: "
+---
 ## Goals
 -
 
