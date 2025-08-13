@@ -34,10 +34,12 @@ concurrent-web-server
 | Thread Pool Module Implementation  | Planned |
 | Epoll Module Implementation        | Planned |
 | Benchmarking Module Implementation | Planned |
+| DevOps and Automation              | In Progress |
 
 
 - See [Project Board](https://github.com/users/jaeunda/projects/3) for the detailed development progress
 
 ### Build & Run
 will be added after initial implemented is complete.
+
 
