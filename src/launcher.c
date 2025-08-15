@@ -79,6 +79,19 @@ int main(int argc, char **argv){
             exit(EXIT_FAILURE);
     }
 
+    if (option & OPT_BLOCK){
+        
+    } else if (option & OPT_MULTI){
+
+    } else if (option & OPT_POOL){
+
+    } else if (option & OPT_EPOLL){
+
+    } else {
+        fprintf(stderr, "Error: Invalid option");
+        exit(EXIT_FAILURE);
+    }
+
     // argv: path, port-number, bind-address, static-file-path, NULL
     exit(EXIT_SUCCESS);
 }
