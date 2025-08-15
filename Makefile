@@ -13,24 +13,24 @@ SOURCES := $(shell find $(SRCDIR) -name '*.c')
 OBJECTS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SOURCES))
 DEPS := $(patsubst $(OBJDIR)/%.o, $(OBJDIR)/%.d, $(OBJECTS))
 
-MODEL_FLAGS = 
+MODEL_FLAGS = -D_MODE_MAIN
 
 .PHONY: all clean run
 
 all: CFLAGS = $(BASE_CFLAGS)
 all: $(TARGET)
 
-single: MODEL_FLAGS = -D_MODE_SINGLE
-single : all
+blocking: MODEL_FLAGS = -D_MODE_BLOCKING
+blocking : all run
 
-thread: MODEL_FLAGS = -D_MODE_THREAD
-thread: all
+multithread: MODEL_FLAGS = -D_MODE_MULTITHREAD
+multithread: all run
 
 threadpool: MODEL_FLAGS = -D_MODE_THREADPOOL
-threadpool: all
+threadpool: all run
 
 epoll: MODEL_FLAGS = -D_MODE_EPOLL
-epoll: all
+epoll: all run
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
