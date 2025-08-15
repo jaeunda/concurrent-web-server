@@ -33,7 +33,7 @@ int main(int argc, char **argv){
             while ((c_tmp = getchar()) != '\n'){
                 c = c_tmp;
                 char_cnt++;
-                if (char_cnt > 64) {
+                if (char_cnt > INPUT_MAX) {
                     fprintf(stderr, "Error: Input too long\n");
                     exit(EXIT_FAILURE);
                 }

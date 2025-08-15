@@ -3,3 +3,5 @@
 #define OPT_MULTI 0b0010
 #define OPT_POOL 0b0100
 #define OPT_EPOLL 0b1000
+
+#define INPUT_MAX 64
