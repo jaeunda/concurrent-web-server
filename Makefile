@@ -18,19 +18,19 @@ MODEL_FLAGS = -D_MODE_MAIN
 .PHONY: all clean run
 
 all: CFLAGS = $(BASE_CFLAGS)
-all: $(TARGET)
+all: $(TARGET) run
 
 blocking: MODEL_FLAGS = -D_MODE_BLOCKING
-blocking : all run
+blocking : all
 
 multithread: MODEL_FLAGS = -D_MODE_MULTITHREAD
-multithread: all run
+multithread: all
 
 threadpool: MODEL_FLAGS = -D_MODE_THREADPOOL
-threadpool: all run
+threadpool: all
 
 epoll: MODEL_FLAGS = -D_MODE_EPOLL
-epoll: all run
+epoll: all
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
