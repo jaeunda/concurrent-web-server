@@ -4,27 +4,30 @@ A high-performance web server implemented with C, supporting multiple concurrenc
 
 ### Project Structure
 ```
-concurrent-web-server
-├── Makefile      		# Build System
-├── README.md     		# Project Overview
-├── docs          		# Documentation and Reports
-│   ├── troubleshooting
-│   └── notes
-├── public        		# Static files served by the web server
-├── src           		# Source Code
-│   ├── http      		    # HTTP protocol handling code
-│   ├── include       		# Header files
-│   ├── server        		# Core server logic
-│   ├── socket        		# Low-level socket and network-related functions
-│   └── util          		# Utility functions
-└── tests         		# Test code and scripts
+epoll-web-server
+├── Makefile            # Build System
+├── README.md           # Project Overview
+├── docs/               # Documentation and Reports
+│   ├── notes/
+│   └── troubleshooting/
+├── include/            # Shared Header Files
+├── public/             # Static files served by the web server
+├── src/
+│   ├── common/         # Shared Source Code
+│   │   ├── http/          # HTTP Protocol Handling
+│   │   ├── socket/        # Low-Level Socket and Network-Related Functions
+│   │   └── util/          # Utility Functions
+│   ├── launcher.c      # Main Program
+│   └── servers/        # Core Server Logic
+└── tests/              # Test Code and Scripts
 ```
+
 
 ### Modules & Progress
 
 | Module                             | Status  |
 | ---------------------------------- | ------- |
-| Core Module Development            | In Progress |
+| [Core Module Development](https://github.com/jaeunda/epoll-web-server/milestone/1)            | In Progress |
 | Config Module Development          | Planned |
 | Socket Module Implementation       | Planned |
 | HTTP Module Implementation         | Planned |
@@ -34,12 +37,12 @@ concurrent-web-server
 | Thread Pool Module Implementation  | Planned |
 | Epoll Module Implementation        | Planned |
 | Benchmarking Module Implementation | Planned |
-| DevOps and Automation              | In Progress |
+| [DevOps and Automation](https://github.com/jaeunda/epoll-web-server/milestone/11)              | In Progress |
 
 
-- See [Project Board](https://github.com/users/jaeunda/projects/3) for the detailed development progress
 
 ### Build & Run
 will be added after initial implemented is complete.
+
 
 
