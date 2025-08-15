@@ -5,7 +5,7 @@ LDFLAGS = -pthread
 # -Isrc/include: 헤더 파일 경로
 # -MMD -MP: 의존성 파일(.d) 자동 생성, 누락된 헤더에 대한 경고 방지
 
-TARGET = server
+TARGET = c-web-server
 SRCDIR = src
 OBJDIR = obj
 
@@ -15,7 +15,7 @@ DEPS := $(patsubst $(OBJDIR)/%.o, $(OBJDIR)/%.d, $(OBJECTS))
 
 MODEL_FLAGS = 
 
-.PHONY: all clean
+.PHONY: all clean run
 
 all: CFLAGS = $(BASE_CFLAGS)
 all: $(TARGET)
@@ -51,5 +51,8 @@ clean:
 	rm -rf $(OBJDIR)
 	@echo "Clean complete."
 
+run: all
+	@echo "Running $(TARGET)..."
+	./$(TARGET)
 
 -include $(DEPS)
