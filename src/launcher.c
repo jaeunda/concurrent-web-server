@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "../include/launcher-mode.h"
+#include "../include/launcher.h"
+#include "../include/config.h"
+#include "../include/server-modes.h"
 int main(int argc, char **argv){
     // usage: connect information
     static int option;
@@ -59,24 +61,6 @@ int main(int argc, char **argv){
             if (!option) continue;
             break;
         }
-    }
-
-    switch (option){
-        case OPT_BLOCK:
-            printf("blocking\n");
-            break;
-        case OPT_MULTI:
-            printf("multi threaded\n");
-            break;
-        case OPT_POOL:
-            printf("thread pool\n");
-            break;
-        case OPT_EPOLL:
-            printf("epoll\n");
-            break;
-        default:
-            fprintf(stderr, "there is no option\n");
-            exit(EXIT_FAILURE);
     }
 
     if (option & OPT_BLOCK){
