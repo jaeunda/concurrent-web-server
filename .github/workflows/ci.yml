@@ -1,0 +1,66 @@
+name: CI Build and Test
+
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Install build dependencies
+            run: sudo apt-get update && sudo apt-get install -y build-essential
+        
+          - name: Build the project
+            run: make all
+
+          - name: List build artifacts
+            run: ls -l bin/
+
+        # - name: Run tests
+        #   run: make test
+
+          - name: Add comment to PR
+            if: github.event_name == 'pull_request' && always()
+            uses: actions/github-script@7
+            with:
+                script: |
+                    const status = '${{ job.status }}';
+                    let body;
+
+                    if (status === 'success') {
+                        body = `
+                        ✅ **Build Succeeded!&&
+                        
+                        **Build Artifacts:**
+                        \`\`\`
+                        ${{ steps.list_artifacts.outputs.stdout }}
+                        \`\`\`
+                        `;
+                    } else {
+                        let buildLog = `${{ steps.build_step.outputs.stdout }}`.trim();
+                        if (buildLog.length > MAX_LOG_LENGTH) {
+                            buildLog = buildLog.substring(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
+                        }
+                        const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+                        body = `
+                        ❌ **Build Failed!** 
+                        
+                        **Build Log:**
+                        \`\`\`
+                        ${buildLog}
+                        \`\`\`
+                        [View full log](${runUrl})
+                        `;
+                    }
+                    github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: body
+                    });
