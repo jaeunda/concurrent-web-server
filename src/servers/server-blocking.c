@@ -1,0 +1,17 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+int main(int argc, char **argv){
+    if (argc != 5){
+        fprintf(stderr, "Error: argument error\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("[%d] Blocking Server Running on %s:%s...\n", getpid(), argv[2], argv[1]);
+    for (int i=3; i>0; i--){
+        printf("[%d] Close in %d seconds ...\n", getpid(), i);
+        sleep(1);
+    }
+    printf("[%d] Exit Blocking Server.\n", getpid());
+    exit(EXIT_SUCCESS);
+}
