@@ -96,7 +96,7 @@ int main(int argc, char **argv){
 /* BIND IP ADDRESS */
     strcpy(config.ip_address, "127.0.0.1");
 /* THE PATH FOR STATIC FILES */
-    strcpy(config.file_path, "./public");
+    strcpy(config.file_path, "../public");
 /* THE NUMBER OF THREADS */
     int thread_number = (option & OPT_POOL) ? 4 : 1;
     snprintf(config.thread_number, sizeof(config.thread_number), "%d", thread_number);
