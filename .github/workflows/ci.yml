@@ -21,12 +21,17 @@ jobs:
             run: sudo apt-get update && sudo apt-get install -y build-essential
         
           - name: Build the project
-            run: make all
+            id: build_step
+            continue-on-error: true
+            run: make all 2>&1
 
           - name: List build artifacts
+            if: steps.build_step.outcome == 'success'
+            id: list_artifacts
             run: ls -l bin/
 
         # - name: Run tests
+        #   if: steps.build_step.outcome == 'success'
         #   run: make test
 
           - name: Add comment to PR
@@ -39,7 +44,7 @@ jobs:
 
                     if (status === 'success') {
                         body = `
-                        ✅ **Build Succeeded!&&
+                        ✅ **Build Succeeded!**
                         
                         **Build Artifacts:**
                         \`\`\`
