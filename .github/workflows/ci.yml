@@ -54,32 +54,33 @@ jobs:
                 script: |
                     const status = '${{ steps.build_step.outcome }}';
                     const MAX_LOG_LENGTH = 4000;
-                    let body;
+                    
+                    const artifacts = (`${{ steps.list_artifacts.outputs.artifacts || '' }}`).trim();
+                    let log = (`${{ steps.build_step.outputs.log || '' }}`).trim();
+                    if (log.length > MAX_LOG_LENGTH) log = log.slice(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
+                    const fence = "~~~"
 
+                    let body;
                     if (status === 'success') {
-                        body = `
-                        ✅ **Build Succeeded!**
-                        
-                        **Build Artifacts:**
-                        \`\`\`
-                        ${{ steps.list_artifacts.outputs.stdout }}
-                        \`\`\`
-                        `;
+                        body = [
+                        "✅ **Build Succeeded!**",
+                        "",
+                        "**Build Artifacts:**",
+                        fence,
+                        artifacts || "(no files found in bin/)",
+                        fence
+                        ].join("\n");
                     } else {
-                        let buildLog = `${{ steps.build_step.outputs.stdout }}`.trim();
-                        if (buildLog.length > MAX_LOG_LENGTH) {
-                            buildLog = buildLog.substring(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
-                        }
                         const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-                        body = `
-                        ❌ **Build Failed!** 
-                        
-                        **Build Log:**
-                        \`\`\`
-                        ${buildLog}
-                        \`\`\`
-                        [View full log](${runUrl})
-                        `;
+                        body = [
+                        "❌ **Build Failed!**", 
+                        "",
+                        "**Build Log:**",
+                        fence,
+                        log || "(empty)",
+                        fence,
+                        `[View full log](${runUrl})`
+                        ].join("\n");
                     }
                     github.rest.issues.createComment({
                         issue_number: context.issue.number,
