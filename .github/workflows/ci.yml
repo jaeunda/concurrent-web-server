@@ -44,8 +44,8 @@ jobs:
             if: always()
             id: collect_logs
             run: |
-                { echo "log<<EOF"; cat build.log 2>/dev/null || true; echo "EOF" } >> "$GITHUB_OUTPUT"
-                { echo "log<<EOF"; cat warnings.log 2>/dev/null || true; echo "EOF" } >> "$GITHUB_OUTPUT"
+                { echo "log<<EOF"; cat build.log 2>/dev/null || true; echo "EOF"; } >> "$GITHUB_OUTPUT"
+                { echo "log<<EOF"; cat warnings.log 2>/dev/null || true; echo "EOF"; } >> "$GITHUB_OUTPUT"
 
         # - name: Run tests
         #   if: steps.build_step.outcome == 'success'
