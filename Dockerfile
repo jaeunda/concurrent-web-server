@@ -1,7 +1,7 @@
 # Build Stage
 FROM debian:bullseye-slim AS builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y builld-essential && \
+RUN apt-get update && apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
 RUN make all
 
