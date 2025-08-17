@@ -1,152 +1,161 @@
 name: CI Build and Test
 
 on:
-    push:
-        branches: [ "main" ]
-    pull_request:
-        branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
-    issues: write
-    pull-requests: write
-    actions: read
+  issues: write
+  pull-requests: write
+  actions: read
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          - name: Install build dependencies
-            run: sudo apt-get update && sudo apt-get install -y build-essential
-        
-          - name: Build the project
-            id: build_step
-            shell: bash
-            run: |
-                set -o pipefail
-                make all 2>&1 | tee build.log
-                status=${PIPESTATUS[0]}
-                grep -i "warning" build.log > warnings.log || true
-                exit $status
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential
 
-          - name: List build artifacts
-            if: steps.build_step.outcome == 'success'
-            id: list_artifacts
-            run: |
-                {
-                    echo "artifacts<<EOF"
-                    ls -l bin/ || echo "(no files found in bin/)"
-                    echo "EOF"
-                } >> "$GITHUB_OUTPUT"
-        
-          - name: Extract failure summary
-            if: always()
-            id: failure_summary
-            shell: bash
-            run: |
-                MAX = 800
-                summarize() {
-                    local s="$1"
-                    local n=${#s}
-                    if [ "$n" -gt "$MAX" ]; then
-                        printf "%s\n" "${s:0:$MAX}"
-                        printf "\n... (summary truncated)"
-                    else
-                        printf "%s" "$s"
-                    fi    
-                }
-                    if [ -f build.log ]; then
-                        first_errors="$(grep -niE '(^|[[:space:]])error:|^FAIL|^ERROR' build.log | head -n 5 || true)"
-                        tail_markers="$(grep -niE 'make([[0-9]]+\)?: \*\*\*|collect2:error|ld returned [0-9]+exit status' build.log | tail -n 3 || true)"
-                        
-                        if [ -n "$first_errors" ] || [ -n "$tail_markers" ]; then
-                            summary="Failure indicators:
-                                $first_errors
-                                $tail_markers"
-                        else
-                            summary="No explicit error lines found. Tail of build.log:
-                                $(tail -n 30 build.log)"
-                        fi
+      - name: Build the project (always create build.log)
+        id: build_step
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          # 어떤 일이 있어도 build.log 파일은 존재하도록 보장
+          : > build.log
+          {
+            echo "==[ make all ]========================================"
+            # stdout+stderr를 tee로 파이프 (실패해도 로그는 남음)
+            make all 2>&1 | tee -a build.log
+            exit_code=${PIPESTATUS[0]}
+            echo "==[ exit code ]======================================="
+            echo "$exit_code"
+            exit "$exit_code"
+          }
 
-                        {
-                            echo "summary<<EOF"
-                            summarize "$summary"
-                            echo
-                            echo "EOF"
-                        } >> "$GITHUB_OUTPUT"
+      - name: List build artifacts
+        if: steps.build_step.outcome == 'success'
+        id: list_artifacts
+        shell: bash
+        run: |
+          {
+            echo "artifacts<<EOF"
+            ls -l bin/ 2>/dev/null || echo "(no files found in bin/)"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-          - name: Collect Logs
-            if: always()
-            id: collect_logs
-            run: |
-                { echo "log<<EOF"; cat build.log 2>/dev/null || true; echo "EOF"; } >> "$GITHUB_OUTPUT"
-                { echo "log<<EOF"; cat warnings.log 2>/dev/null || true; echo "EOF"; } >> "$GITHUB_OUTPUT"
+      - name: Extract failure summary
+        if: always()
+        id: failure_summary
+        shell: bash
+        run: |
+          MAX=1200
+          : > summary.txt
+          if [[ -f build.log ]]; then
+            # 대표 에러 패턴 여러 개 시도
+            {
+              grep -niE '(^|[[:space:]])error: ' build.log | head -n 8
+              grep -niE '^FAIL|^ERROR' build.log | head -n 8
+              grep -niE 'make(\[[0-9]+\])?: \*\*\*' build.log | tail -n 5
+              grep -niE 'collect2: error|ld returned [0-9]+ exit status' build.log | tail -n 5
+              grep -niE 'undefined reference to|multiple definition of' build.log | head -n 8
+            } | awk 'NF' > hits.txt || true
 
-        # - name: Run tests
-        #   if: steps.build_step.outcome == 'success'
-        #   run: make test
+            if [[ -s hits.txt ]]; then
+              {
+                echo "Failure indicators:"
+                cat hits.txt
+              } > summary.txt
+            else
+              {
+                echo "No explicit error lines found. Tail of build.log:"
+                tail -n 100 build.log
+              } > summary.txt
+            fi
 
-          - name: Add comment to PR
-            if: github.event_name == 'pull_request' && always()
-            uses: actions/github-script@v7
-            env:
-                BUILD_ARTIFACTS: ${{ steps.list_artifacts.outputs.artifacts }}
-                BUILD_LOG: ${{ steps.collect_logs.outputs.log }}
-                BUILD_WARNINGS: ${{ steps.collect_logs.outputs.warnings }}
-                FAILURE_SUMMARY: ${{ steps.failure_summary.outputs.summary }}
-            with:
-                script: |
-                    const status = '${{ steps.build_step.outcome }}';
-                    const MAX = 4000;
-                    
-                    const artifacts = (process.env.BUILD_ARTIFACTS || '').trim();
-                    let log = (process.env.BUILD_LOG || '').trim();
-                    let warnings = (process.env.BUILD_WARNINGS || '').trim();
-                    const summary = (process.env.FAILURE_SUMMARY || '').trim();
+            # 길이 제한
+            SZ=$(wc -c < summary.txt)
+            if (( SZ > MAX )); then
+              head -c $MAX summary.txt > summary.cut
+              printf "\n... (summary truncated)" >> summary.cut
+              mv summary.cut summary.txt
+            fi
+          else
+            echo "No build.log found." > summary.txt
+          fi
 
-                    if (log.length > MAX) log = log.slice(0, MAX) + "\n\n... (log truncated)";
-                    if (warnings.length > MAX) warnings = warnings.slice(0, MAX) + "\n\n... (log truncated)";
-                    
-                    const fence = "~~~"
-                    let body;
+          {
+            echo "summary<<EOF"
+            cat summary.txt
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-                    if (status === 'success') {
-                        body = [
-                        "✅ **Build Succeeded!**",
-                        "",
-                        "**Build Artifacts:**",
-                        fence,
-                        artifacts || "(no files found in bin/)",
-                        fence
-                        ].join("\n");
-                    } else {
-                        const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-                        body = [
-                        "❌ **Build Failed!**", 
-                        "",
-                        "**Build Log:**",
-                        fence,
-                        summary || "(no summary extraced)",
-                        fence,
-                        "",
-                        log || "(empty)",
-                        fence,
-                        `[View full log](${runUrl})`
-                        ].join("\n");
-                    }
-                    if (warnings) {
-                        body += "\n\n" + [
-                            "⚠️ **Warnings**",
-                            fence,
-                            warnings,
-                            fence
-                        ].join("\n");
-                    }
-                    github.rest.issues.createComment({
-                        issue_number: context.issue.number,
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        body: body
-                    });
+      - name: Collect Logs
+        if: always()
+        id: collect_logs
+        shell: bash
+        run: |
+          { echo "log<<EOF";       (cat build.log 2>/dev/null || true);    echo "EOF"; } >> "$GITHUB_OUTPUT"
+          { echo "warnings<<EOF";  (grep -i "warning" build.log 2>/dev/null || true); echo "EOF"; } >> "$GITHUB_OUTPUT"
+
+      # - name: Run tests
+      #   if: steps.build_step.outcome == 'success'
+      #   run: make test
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        env:
+          BUILD_ARTIFACTS: ${{ steps.list_artifacts.outputs.artifacts }}
+          BUILD_LOG: ${{ steps.collect_logs.outputs.log }}
+          BUILD_WARNINGS: ${{ steps.collect_logs.outputs.warnings }}
+          FAILURE_SUMMARY: ${{ steps.failure_summary.outputs.summary }}
+        with:
+          script: |
+            const status = '${{ steps.build_step.outcome }}';
+            const MAX = 4000;
+            const artifacts = (process.env.BUILD_ARTIFACTS || '').trim();
+            let log = (process.env.BUILD_LOG || '').trim();
+            let warnings = (process.env.BUILD_WARNINGS || '').trim();
+            const summary = (process.env.FAILURE_SUMMARY || '').trim();
+            const trunc = s => s.length > MAX ? s.slice(0, MAX) + "\n\n... (log truncated)" : s;
+            log = trunc(log);
+            warnings = trunc(warnings);
+            const fence = "```";
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            let body;
+            if (status === 'success') {
+              body = [
+                "✅ **Build Succeeded!**",
+                "",
+                "**Build Artifacts:**",
+                fence, artifacts || "(no files found in bin/)", fence
+              ].join("\n");
+            } else {
+              body = [
+                "❌ **Build Failed!**",
+                "",
+                "**Build Log (Summary):**",
+                fence, summary || "(no summary extracted)", fence,
+                "",
+                "**Build Log (Snippet):**",
+                fence, log || "(empty)", fence,
+                `[View full log](${runUrl})`
+              ].join("\n");
+            }
+            if (warnings) {
+              body += "\n\n" + ["⚠️ **Warnings**", fence, warnings, fence].join("\n");
+            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
