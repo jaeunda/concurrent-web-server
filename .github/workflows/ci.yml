@@ -24,13 +24,28 @@ jobs:
           set -o pipefail
           make all 2>&1 | tee build.log
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        id: docker_push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/epoll-web-server:latest
+
       - name: Collect logs
         if: always()
         shell: bash
         run: |
           grep -niE '(^|[[:space:]])error:' build.log > errors.txt || true
           grep -i "warning" build.log > warnings.txt || true
-
+      
       - name: Comment to PR
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
@@ -40,30 +55,28 @@ jobs:
             const ex = p => { try { return fs.existsSync(p); } catch { return false; } };
             const read = p => { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return ''; } };
 
-            const status  = '${{ job.status }}'; // success | failure | cancelled
+            const buildOk  = '${{ steps.build_step.outcome }}' === 'success';
+            const dockerOk = '${{ steps.docker_push.outcome }}' === 'success';
             const runUrl  = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             const names = ['c-web-server','server-blocking','server-multi-thread','server-thread-pool','server-epoll'];
             const exist = names.map(n => ex(`bin/${n}`));
-            const allOk = exist.every(Boolean) && status === 'success';
+            const allOk = exist.every(Boolean) && buildOk && dockerOk;
 
             const warns  = read('warnings.txt');
             const errs   = read('errors.txt');
             const hasWarn = !!warns;
-            const hasErr  = status !== 'success' || !!errs;
+            const hasErr  = !buildOk || !!errs;
 
-            // Build Results (horizontal)
             const head = `| ${names.join(' | ')} |\n|${names.map(()=>':---:').join('|')}|`;
             const row  = `| ${exist.map(x => x ? '✅' : '❌').join(' | ')} |`;
 
-            // Summary table
             const sum = [
-              '| Success | Warnings | Errors |',
-              '|:------:|:--------:|:-----:|',
-              `| ${allOk ? '✅ Yes' : '❌ No'} | ${hasWarn ? '⚠️ Yes' : '✅ No'} | ${hasErr ? '❌ Yes' : '✅ No'} |`
+              '| 🛠️ Build | ⚠️ Warnings | ❌ Errors | 🐋 Docker Push | 🎯 CI Overall |',
+              '|:------:|:--------:|:-----:|:--------:|:--------:|',
+              `| ${buildOk ? '✅ Yes' : '❌ No'} | ${hasWarn ? '⚠️ Yes' : '✅ No'} | ${hasErr ? '❌ Yes' : '✅ No'} | ${dockerOk ? '✅ Yes' : '❌ No'} | ${allOk ? '✅ Yes' : '❌ No'} |`
             ].join('\n');
 
-            // Optional summary log (only if warning or error exists)
             let summaryLog = '';
             if (hasWarn || hasErr) {
               const lines = []
@@ -74,13 +87,11 @@ jobs:
               }
             }
 
-            const title = allOk ? '✅ **Build Succeeded!**' : '❌ **Build Failed!**';
+            const title = allOk ? '✅ **Build & Push Succeeded!**' : '❌ **Build or Push Failed!**';
             const body = [
               title,
               '',
-              '**Artifacts directory:** `bin/`',
-              '',
-              '**Build Results**',
+              '**Build Results** (💾 `bin/`)',
               head, row,
               '',
               '**Summary**',
