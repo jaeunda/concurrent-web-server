@@ -1,4 +1,4 @@
-#include <stdio.>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 #include "config.h"
 #include "server-modes.h"
 int main(int argc, char **argv){
-    (void)argc;
+    // (void)argc;
     /* Usage: CONNECT INFORMATION
         1. Server Mode
         2. Port Number (default: 8080)
