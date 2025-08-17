@@ -8,68 +8,87 @@ on:
 
 permissions:
   pull-requests: write
-  actions: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install build deps
         run: sudo apt-get update && sudo apt-get install -y build-essential
 
-      - name: Build (capture log)
+      - name: Build the project
         id: build_step
         shell: bash
         run: |
           set -o pipefail
           make all 2>&1 | tee build.log
 
-      - name: Extract brief summary
+      - name: Collect logs
         if: always()
         shell: bash
         run: |
-          if [[ -f build.log ]]; then
-            { 
-              grep -niE '(^| )error:|^FAIL|^ERROR|make(:\[*[0-9]+\]*)?: \*\*\*|collect2: error|ld returned [0-9]+' build.log | head -n 10 \
-              || true
-            } > summary.txt
-            if [[ ! -s summary.txt ]]; then
-              echo "Tail of build.log:" > summary.txt
-              tail -n 80 build.log >> summary.txt
-            fi
-          else
-            echo "No build.log found." > summary.txt
-          fi
+          grep -niE '(^|[[:space:]])error:' build.log > errors.txt || true
+          grep -i "warning" build.log > warnings.txt || true
 
-      - name: Comment on PR (status + summary)
+      - name: Comment to PR
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const status = '${{ job.status }}'; // success | failure | cancelled
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
+            const ex = p => { try { return fs.existsSync(p); } catch { return false; } };
             const read = p => { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return ''; } };
-            const summary = read('summary.txt');
-            const logTail = read('build.log').split('\n').slice(-80).join('\n');
 
-            const fence = '```';
-            let body;
-            if (status === 'success') {
-              body = `✅ **Build Succeeded**\n\n[View run logs](${runUrl})`;
-            } else {
-              body = [
-                '❌ **Build Failed**',
-                '',
-                '**Build Log (Summary):**',
-                fence, (summary || '(no summary)'), fence,
-                '',
-                '[View full log](' + runUrl + ')'
-              ].join('\n');
+            const status  = '${{ job.status }}'; // success | failure | cancelled
+            const runUrl  = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const names = ['c-web-server','server-blocking','server-multi-thread','server-thread-pool','server-epoll'];
+            const exist = names.map(n => ex(`bin/${n}`));
+            const allOk = exist.every(Boolean) && status === 'success';
+
+            const warns  = read('warnings.txt');
+            const errs   = read('errors.txt');
+            const hasWarn = !!warns;
+            const hasErr  = status !== 'success' || !!errs;
+
+            // Build Results (horizontal)
+            const head = `| ${names.join(' | ')} |\n|${names.map(()=>':---:').join('|')}|`;
+            const row  = `| ${exist.map(x => x ? '✅' : '❌').join(' | ')} |`;
+
+            // Summary table
+            const sum = [
+              '| Success | Warnings | Errors |',
+              '|:------:|:--------:|:-----:|',
+              `| ${allOk ? '✅ Yes' : '❌ No'} | ${hasWarn ? '⚠️ Yes' : '✅ No'} | ${hasErr ? '❌ Yes' : '✅ No'} |`
+            ].join('\n');
+
+            // Optional summary log (only if warning or error exists)
+            let summaryLog = '';
+            if (hasWarn || hasErr) {
+              const lines = []
+                .concat(errs ? errs.split('\n').slice(0,6) : [])
+                .concat(hasWarn ? ['--- warnings ---', ...warns.split('\n').slice(0,6)] : []);
+              if (lines.length) {
+                summaryLog = ['\n**Summary Log**', '```', lines.join('\n'), '```'].join('\n');
+              }
             }
+
+            const title = allOk ? '✅ **Build Succeeded!**' : '❌ **Build Failed!**';
+            const body = [
+              title,
+              '',
+              '**Artifacts directory:** `bin/`',
+              '',
+              '**Build Results**',
+              head, row,
+              '',
+              '**Summary**',
+              sum,
+              summaryLog,
+              '',
+              `[View full log](${runUrl})`
+            ].join('\n');
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
