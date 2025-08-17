@@ -16,7 +16,7 @@ int main(int argc, char **argv){
         4. Document Root (default: ./public)
         5. (ThreadPool) Thread/Worker Count (default: 4)
     */
-    // static int option;
+    static int option;
     static launcherConfig config;
 /* SERVER MODEL */
     if (!option){
