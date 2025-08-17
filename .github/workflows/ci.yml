@@ -32,6 +32,12 @@ jobs:
                     cat build.log
                     echo "EOF"
                 } >> "$GITHUB_OUTPUT"
+                grep -i "warning" build.log > warnings.log || true
+                {
+                    echo "warnings<<EOF"
+                    cat warnings.log
+                    echo "EOF"
+                } >> "$GITHUB_OUTPUT"
 
           - name: List build artifacts
             if: steps.build_step.outcome == 'success'
@@ -57,7 +63,10 @@ jobs:
                     
                     const artifacts = (`${{ steps.list_artifacts.outputs.artifacts || '' }}`).trim();
                     let log = (`${{ steps.build_step.outputs.log || '' }}`).trim();
+                    let warnings = (`${{ steps.build_step.outputs.warnings || '' }}`).trim();
+
                     if (log.length > MAX_LOG_LENGTH) log = log.slice(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
+                    if (warnings.length > MAX_LOG_LENGTH) warnings = warnings.slice(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
                     const fence = "~~~"
 
                     let body;
@@ -80,6 +89,14 @@ jobs:
                         log || "(empty)",
                         fence,
                         `[View full log](${runUrl})`
+                        ].join("\n");
+                    }
+                    if (warnings) {
+                        body += "\n\n" + [
+                            "⚠️ Warnings",
+                            fence,
+                            warnings,
+                            fence
                         ].join("\n");
                     }
                     github.rest.issues.createComment({
