@@ -56,20 +56,25 @@ jobs:
           - name: Add comment to PR
             if: github.event_name == 'pull_request' && always()
             uses: actions/github-script@v7
+            env:
+                BUILD_ARTIFACTS: ${{ steps.list_artifacts.outputs.artifacts }}
+                BUILD_LOG: ${{ steps.build_step.outputs.log }}
+                BUILD_WARNINGS: ${{ steps.build_step.outputs.warnings }}
             with:
                 script: |
                     const status = '${{ steps.build_step.outcome }}';
-                    const MAX_LOG_LENGTH = 4000;
+                    const MAX = 4000;
                     
-                    const artifacts = (`${{ steps.list_artifacts.outputs.artifacts || '' }}`).trim();
-                    let log = (`${{ steps.build_step.outputs.log || '' }}`).trim();
-                    let warnings = (`${{ steps.build_step.outputs.warnings || '' }}`).trim();
+                    const artifacts = (process.env.BUILD_ARTIFACTS || '').trim();
+                    let log = (process.env.BUILD_LOG || '').trim();
+                    let warnings = (process.env.BUILD_WARNINGS || '').trim();
 
-                    if (log.length > MAX_LOG_LENGTH) log = log.slice(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
-                    if (warnings.length > MAX_LOG_LENGTH) warnings = warnings.slice(0, MAX_LOG_LENGTH) + "\n\n... (log truncated)";
+                    if (log.length > MAX) log = log.slice(0, MAX) + "\n\n... (log truncated)";
+                    if (warnings.length > MAX) warnings = warnings.slice(0, MAX) + "\n\n... (log truncated)";
+                    
                     const fence = "~~~"
-
                     let body;
+                    
                     if (status === 'success') {
                         body = [
                         "✅ **Build Succeeded!**",
@@ -93,7 +98,7 @@ jobs:
                     }
                     if (warnings) {
                         body += "\n\n" + [
-                            "⚠️ Warnings",
+                            "⚠️ **Warnings**",
                             fence,
                             warnings,
                             fence
