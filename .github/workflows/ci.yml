@@ -23,21 +23,19 @@ jobs:
         
           - name: Build the project
             id: build_step
-            continue-on-error: true
             run: |
                 set -o pipefail
-                make all 2>&1 | tee build.log
+                ( make all 2>&1 | tee build.log ); status=$?
+                grep -i "warning" build.log > warnings.log || true
                 {
                     echo "log<<EOF"
                     cat build.log
                     echo "EOF"
-                } >> "$GITHUB_OUTPUT"
-                grep -i "warning" build.log > warnings.log || true
-                {
                     echo "warnings<<EOF"
                     cat warnings.log
                     echo "EOF"
                 } >> "$GITHUB_OUTPUT"
+                exit $status
 
           - name: List build artifacts
             if: steps.build_step.outcome == 'success'
@@ -74,7 +72,7 @@ jobs:
                     
                     const fence = "~~~"
                     let body;
-                    
+
                     if (status === 'success') {
                         body = [
                         "✅ **Build Succeeded!**",
