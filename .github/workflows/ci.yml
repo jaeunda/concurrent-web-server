@@ -39,7 +39,7 @@ jobs:
             uses: actions/github-script@v7
             with:
                 script: |
-                    const buildOutcome = '${{ steps.build_step.outcome }}';
+                    const status = '${{ steps.build_step.outcome }}';
                     const MAX_LOG_LENGTH = 4000;
                     let body;
 
