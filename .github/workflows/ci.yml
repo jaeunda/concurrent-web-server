@@ -28,15 +28,6 @@ jobs:
                 make all 2>&1 | tee build.log
                 status=${PIPESTATUS[0]}
                 grep -i "warning" build.log > warnings.log || true
-                {
-                    echo "log<<EOF"
-                    cat build.log
-                    echo "EOF"
-                    echo "warnings<<EOF"
-                    cat warnings.log
-                    echo "EOF"
-                } >> "$GITHUB_OUTPUT"
-
                 exit $status
 
           - name: List build artifacts
@@ -49,6 +40,13 @@ jobs:
                     echo "EOF"
                 } >> "$GITHUB_OUTPUT"
 
+          - name: Collect Logs
+            if: always()
+            id: collect_logs
+            run: |
+                { echo "log<<EOF"; cat build.log 2>/dev/null || true; echo "EOF" } >> "$GITHUB_OUTPUT"
+                { echo "log<<EOF"; cat warnings.log 2>/dev/null || true; echo "EOF" } >> "$GITHUB_OUTPUT"
+
         # - name: Run tests
         #   if: steps.build_step.outcome == 'success'
         #   run: make test
@@ -58,8 +56,8 @@ jobs:
             uses: actions/github-script@v7
             env:
                 BUILD_ARTIFACTS: ${{ steps.list_artifacts.outputs.artifacts }}
-                BUILD_LOG: ${{ steps.build_step.outputs.log }}
-                BUILD_WARNINGS: ${{ steps.build_step.outputs.warnings }}
+                BUILD_LOG: ${{ steps.collect_logs.outputs.log }}
+                BUILD_WARNINGS: ${{ steps.collect_logs.outputs.warnings }}
             with:
                 script: |
                     const status = '${{ steps.build_step.outcome }}';
