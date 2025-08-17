@@ -23,6 +23,7 @@ jobs:
         
           - name: Build the project
             id: build_step
+            shell: bash
             run: |
                 set -o pipefail
                 make all 2>&1 | tee build.log
@@ -36,9 +37,45 @@ jobs:
             run: |
                 {
                     echo "artifacts<<EOF"
-                    ls -l bin/
+                    ls -l bin/ || echo "(no files found in bin/)"
                     echo "EOF"
                 } >> "$GITHUB_OUTPUT"
+        
+          - name: Extract failure summary
+            if: always()
+            id: failure_summary
+            shell: bash
+            run: |
+                MAX = 800
+                summarize() {
+                    local s="$1"
+                    local n=${#s}
+                    if [ "$n" -gt "$MAX" ]; then
+                        printf "%s\n" "${s:0:$MAX}"
+                        printf "\n... (summary truncated)"
+                    else
+                        printf "%s" "$s"
+                    fi    
+                }
+                    if [ -f build.log ]; then
+                        first_errors="$(grep -niE '(^|[[:space:]])error:|^FAIL|^ERROR' build.log | head -n 5 || true)"
+                        tail_markers="$(grep -niE 'make([[0-9]]+\)?: \*\*\*|collect2:error|ld returned [0-9]+exit status' build.log | tail -n 3 || true)"
+                        
+                        if [ -n "$first_errors" ] || [ -n "$tail_markers" ]; then
+                            summary="Failure indicators:
+                                $first_errors
+                                $tail_markers"
+                        else
+                            summary="No explicit error lines found. Tail of build.log:
+                                $(tail -n 30 build.log)"
+                        fi
+
+                        {
+                            echo "summary<<EOF"
+                            summarize "$summary"
+                            echo
+                            echo "EOF"
+                        } >> "$GITHUB_OUTPUT"
 
           - name: Collect Logs
             if: always()
@@ -58,6 +95,7 @@ jobs:
                 BUILD_ARTIFACTS: ${{ steps.list_artifacts.outputs.artifacts }}
                 BUILD_LOG: ${{ steps.collect_logs.outputs.log }}
                 BUILD_WARNINGS: ${{ steps.collect_logs.outputs.warnings }}
+                FAILURE_SUMMARY: ${{ steps.failure_summary.outputs.summary }}
             with:
                 script: |
                     const status = '${{ steps.build_step.outcome }}';
@@ -66,6 +104,7 @@ jobs:
                     const artifacts = (process.env.BUILD_ARTIFACTS || '').trim();
                     let log = (process.env.BUILD_LOG || '').trim();
                     let warnings = (process.env.BUILD_WARNINGS || '').trim();
+                    const summary = (process.env.FAILURE_SUMMARY || '').trim();
 
                     if (log.length > MAX) log = log.slice(0, MAX) + "\n\n... (log truncated)";
                     if (warnings.length > MAX) warnings = warnings.slice(0, MAX) + "\n\n... (log truncated)";
@@ -89,6 +128,9 @@ jobs:
                         "",
                         "**Build Log:**",
                         fence,
+                        summary || "(no summary extraced)",
+                        fence,
+                        "",
                         log || "(empty)",
                         fence,
                         `[View full log](${runUrl})`
