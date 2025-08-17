@@ -25,7 +25,8 @@ jobs:
             id: build_step
             run: |
                 set -o pipefail
-                ( make all 2>&1 | tee build.log ); status=$?
+                make all 2>&1 | tee build.log
+                status=${PIPESTATUS[0]}
                 grep -i "warning" build.log > warnings.log || true
                 {
                     echo "log<<EOF"
@@ -35,6 +36,7 @@ jobs:
                     cat warnings.log
                     echo "EOF"
                 } >> "$GITHUB_OUTPUT"
+
                 exit $status
 
           - name: List build artifacts
