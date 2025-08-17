@@ -24,12 +24,24 @@ jobs:
           - name: Build the project
             id: build_step
             continue-on-error: true
-            run: make all 2>&1
+            run: |
+                set -o pipefail
+                make all 2>&1 | tee build.log
+                {
+                    echo "log<<EOF"
+                    cat build.log
+                    echo "EOF"
+                } >> "$GITHUB_OUTPUT"
 
           - name: List build artifacts
             if: steps.build_step.outcome == 'success'
             id: list_artifacts
-            run: ls -l bin/
+            run: |
+                {
+                    echo "artifacts<<EOF"
+                    ls -l bin/
+                    echo "EOF"
+                } >> "$GITHUB_OUTPUT"
 
         # - name: Run tests
         #   if: steps.build_step.outcome == 'success'
