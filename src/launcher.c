@@ -8,6 +8,7 @@
 #include "config.h"
 #include "server-modes.h"
 int main(int argc, char **argv){
+    (void)argc;
     /* Usage: CONNECT INFORMATION
         1. Server Mode
         2. Port Number (default: 8080)
@@ -17,15 +18,6 @@ int main(int argc, char **argv){
     */
     static int option;
     static launcherConfig config;
-#ifdef _MODE_BLOCK
-    option |= OPT_BLOCK;
-#elif _MODE_MULTI
-    option |= OPT_MULTI;
-#elif _MODE_POOL
-    option |= OPT_POOL;
-#elif _MODE_EPOLL
-    option |= OPT_EPOLL;
-#endif
 /* SERVER MODEL */
     if (!option){
         printf("[Server Mode]\n");
