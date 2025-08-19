@@ -6,20 +6,32 @@ typedef enum {
     LOG_LEVEL_INFO,
     LOG_LEVEL_WARN,
     LOG_LEVEL_ERROR,
-    LOG_LEVEL_FATAL,
-    LOG_LEVEL_NONE  // disable all logging
+    LOG_LEVEL_FATAL
 } LogLevel;
 
-void log_init(const char *file_path); // if file_path == NULL then console
-void log_set_console(int enabled);
+typedef enum {
+    LOG_SINK_FILE = 0,
+    LOG_SINK_STDOUT,
+    LOG_SINK_SYSLOG
+} LogSink;
 
-// void log_set_level(LogLevel level);
+typedef struct {
+    LogSink sink;
+    const char *log_path;
+    const char *syslog_tag;
+    short use_log_thread;
+    size_t queue_size;
+    short use_flock;
+} LogOpt;
 
-void log_msg(const char *format, ...); // stdout
-void log_error(const char *format, ...); // stderr
-void log_fatal(const char *format, ...); // stderr -> exit
+// if file_path == NULL then console
+// return fd;
+int log_init(const LogOpt *opts); // add SIGHUP handler 
 
-void log_close(void);
+void log_write(LogLevel level, const char *format, ...);
+
+void log_flush(void);
+void log_shutdown(void);
 
 
 #endif
