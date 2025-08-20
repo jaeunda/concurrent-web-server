@@ -35,21 +35,19 @@ static volatile sig_atomic_t hup_flag = 0;
 #ifdef _DEBUG_LOG
 int main(void){ 
     LogOpt opt = {0};
-    #ifdef _STDOUT
     opt.sink = LOG_SINK_STDOUT;
-    short use_flock = 1;
-    #endif
+    opt.use_flock = 1;
 
     #ifdef _SYSLOG
     opt.sink = LOG_SINK_SYSLOG;
     strcpy(opt.syslog_tag, "log_test");
-    short use_flock = 1;
+    opt.use_flock = 1;
     #endif
 
     #ifdef _FILE
     opt.sink = LOG_SINK_FILE;
     strcpy(opt.file_path, "./test_log");
-    short use_flock = 1;
+    opt.use_flock = 1;
     #endif
 
     log_init(&opt);
@@ -206,6 +204,7 @@ const char *get_LogLevel(LogLevel level){
     }
 }
 int append_pid(char *file_name, size_t size){
+    if (!(g_opt.sink & LOG_SINK_FILE)) return 0;
     char pid_buffer[32];
     snprintf(pid_buffer, sizeof(pid_buffer), ".%d", getpid());
     

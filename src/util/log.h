@@ -12,9 +12,9 @@ typedef enum {
 } LogLevel;
 
 typedef enum {
-    LOG_SINK_FILE = 0,
+    LOG_SINK_FILE = 4,
     LOG_SINK_STDOUT = 2,
-    LOG_SINK_SYSLOG = 4
+    LOG_SINK_SYSLOG = 5
 } LogSink;
 
 typedef struct {
