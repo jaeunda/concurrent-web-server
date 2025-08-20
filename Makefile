@@ -17,7 +17,7 @@ TARGETS := $(addprefix $(BINDIR)/, \
 	server-epoll \
 )
 
-COMMON_SOURCES := $(shell find $(SRCDIR)/common -name '*.c')
+COMMON_SOURCES := $(shell find $(SRCDIR)/common $(SRCDIR)/util -name '*.c')
 COMMON_OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(COMMON_SOURCES))
 
 LAUNCHER_OBJ := $(OBJDIR)/launcher.o
