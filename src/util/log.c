@@ -21,6 +21,7 @@ void lock_file(short lock_type);
 static void hup_handler(int sig);
 static void rotate_log_file(void);
 
+int append_pid(char *file_name, size_t size);
 char *get_timestamp(void);
 const char *get_LogLevel(LogLevel level);
 
@@ -29,6 +30,7 @@ static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static LogOpt g_opt;
 
 static volatile sig_atomic_t hup_flag = 0;
+// static atomic_bool g_inited = false;
 
 #ifdef _DEBUG_LOG
 int main(void){ 
@@ -51,7 +53,8 @@ int main(void){
     #endif
 
     log_init(&opt);
-    log_write(LOG_LEVEL_INFO, "%d log_test", getpid());
+    for (int i=0; i<10; i++)
+        log_write(LOG_LEVEL_INFO, "%d log_test", getpid());
     log_shutdown();
     return 0;
 }
@@ -59,6 +62,11 @@ int main(void){
 
 int log_init(const LogOpt *opts){ 
     memcpy(&g_opt, opts, sizeof(LogOpt));
+    if (append_pid(g_opt.file_path, sizeof(g_opt.file_path)) < 0){
+        perror("append_pid");
+        return -1;
+    }
+
     if (pthread_mutex_init(&g_mutex, NULL) != 0){
         return -1;
     }
@@ -73,7 +81,7 @@ int log_init(const LogOpt *opts){
             openlog(opts->syslog_tag, LOG_PID | LOG_CONS, LOG_USER);
             break;
         case LOG_SINK_FILE:
-            if ((g_fd = open(opts->file_path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644)) < 0){
+            if ((g_fd = open(g_opt.file_path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644)) < 0){
                 perror("log_init");
                 pthread_mutex_unlock(&g_mutex);
                 return -1;
@@ -196,4 +204,13 @@ const char *get_LogLevel(LogLevel level){
         case LOG_LEVEL_DEBUG: return "DEBUG";
         default: return "UNKNOWN";
     }
+}
+int append_pid(char *file_name, size_t size){
+    char pid_buffer[32];
+    snprintf(pid_buffer, sizeof(pid_buffer), ".%d", getpid());
+    
+    size_t len = strlen(file_name);
+    if (len + strlen(pid_buffer) > size) return -1;
+    memcpy(file_name + len, pid_buffer, strlen(pid_buffer)+1);
+    return 0;
 }
