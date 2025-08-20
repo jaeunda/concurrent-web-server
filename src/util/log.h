@@ -29,8 +29,8 @@ typedef struct {
 // if file_path == NULL then console
 int log_init(const LogOpt *opts); // add SIGHUP handler 
 void log_write(LogLevel level, const char *format, ...);
+extern void log_shutdown(void);
 void log_flush(void);
-void log_shutdown(void);
 
 
 #endif

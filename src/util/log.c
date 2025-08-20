@@ -21,13 +21,41 @@ void lock_file(short lock_type);
 static void hup_handler(int sig);
 static void rotate_log_file(void);
 
-static void get_timestamp(char *, size_t);
+char *get_timestamp(void);
+const char *get_LogLevel(LogLevel level);
 
 static int g_fd = -1;
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static LogOpt g_opt;
 
 static volatile sig_atomic_t hup_flag = 0;
+
+#ifdef _DEBUG_LOG
+int main(void){ 
+    LogOpt opt = {0};
+    #ifdef _STDOUT
+    opt.sink = LOG_SINK_STDOUT;
+    short use_flock = 1;
+    #endif
+
+    #ifdef _SYSLOG
+    opt.sink = LOG_SINK_SYSLOG;
+    strcpy(opt.syslog_tag, "log_test");
+    short use_flock = 1;
+    #endif
+
+    #ifdef _FILE
+    opt.sink = LOG_SINK_FILE;
+    strcpy(opt.file_path, "./test_log");
+    short use_flock = 1;
+    #endif
+
+    log_init(&opt);
+    log_write(LOG_LEVEL_INFO, "%d log_test", getpid());
+    log_shutdown();
+    return 0;
+}
+#endif
 
 int log_init(const LogOpt *opts){ 
     memcpy(&g_opt, opts, sizeof(LogOpt));
@@ -66,22 +94,51 @@ int log_init(const LogOpt *opts){
     return 0;
 }
 void log_write(LogLevel level, const char *format, ...){
-    if (g_fd <= 0){
-        fprintf(stderr, "Error: file descriptor error\n");
-        return; // exit
+    if (g_opt.sink & LOG_SINK_FILE){
+        if (hup_flag)
+            rotate_log_file();
+        if (g_fd < 0){
+            fprintf(stderr, "Error: log file error\n");
+            return;
+        }
     }
-    lock_file(F_WRLCK);
-    // write msg
+    // buffering
+    char str_buffer[BUFFER_SIZE/2];
+    memset((char *)str_buffer, 0, sizeof(str_buffer));
+
+    va_list args;
+    va_start(args, format);
+    vsprintf(str_buffer, format, args);
+    va_end(args);
+
     char log_buffer[BUFFER_SIZE];
-    va_list ap;
-    char *s;
+    memset((char *)log_buffer, 0, sizeof(str_buffer));
+    snprintf(log_buffer, sizeof(log_buffer), "[%s][%s][%d][%lu] %s\n", get_timestamp(), get_LogLevel(level), (int)getpid(), (unsigned long)pthread_self(), str_buffer);
 
-    va_start(ap, format);
-    while (*format){
-        
+    pthread_mutex_lock(&g_mutex);
+    if (g_opt.sink & LOG_SINK_FILE) lock_file(F_WRLCK);
+
+    if (g_opt.sink & LOG_SINK_SYSLOG){
+        syslog(level, "%s", str_buffer);
+    } else {
+        if (write(g_fd, log_buffer, strlen(log_buffer)) < 0){
+            if (g_opt.sink & LOG_SINK_FILE) lock_file(F_UNLCK);
+            pthread_mutex_unlock(&g_mutex);
+            perror("log_write");
+            return;  // exit
+        }
     }
-
-    lock_file(F_UNLCK);
+    if (g_opt.sink & LOG_SINK_FILE) lock_file(F_UNLCK);
+    pthread_mutex_unlock(&g_mutex);
+}
+void log_shutdown(void){
+    if (g_opt.sink & LOG_SINK_SYSLOG){
+        closelog();
+    } else {
+        close(g_fd);
+    }
+    pthread_mutex_destroy(&g_mutex);
+    return;
 }
 static void rotate_log_file(void){
     if (!(g_opt.sink & LOG_SINK_FILE))
@@ -116,8 +173,8 @@ void lock_file(short lock_type){
         exit(EXIT_FAILURE);
     }
 }
-static void get_timestamp(char *buffer, size_t size){
-    char timestamp[128];
+char *get_timestamp(void){
+    static __thread char timestamp[128];
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     if (t == NULL){
@@ -128,9 +185,15 @@ static void get_timestamp(char *buffer, size_t size){
         fprintf(stderr, "strftime returned 0\n");
         exit(EXIT_FAILURE);
     }
-    if (snprintf(buffer, size, "[%s]", timestamp) > (int)size){
-        fprintf(stderr, "timestamp too long\n");
-        exit(EXIT_FAILURE);
+    return timestamp;
+}
+const char *get_LogLevel(LogLevel level){
+    switch (level){
+        case LOG_LEVEL_EMERG: return "EMERGE";
+        case LOG_LEVEL_ERR: return "ERROR";
+        case LOG_LEVEL_WARN: return "WARN";
+        case LOG_LEVEL_INFO: return "INFO";
+        case LOG_LEVEL_DEBUG: return "DEBUG";
+        default: return "UNKNOWN";
     }
-    return;
 }
