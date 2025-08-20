@@ -1,5 +1,3 @@
-#include "log.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,8 +15,11 @@
 // mutex provides exclusive access to the file, preventing race conditions
 #include <pthread.h> 
 
+#include "log.h"
+
 void lock_file(short lock_type);
 static void hup_handler(int sig);
+static void rotate_log_file(void);
 
 static void get_timestamp(char *, size_t);
 
@@ -26,7 +27,7 @@ static int g_fd = -1;
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static LogOpt g_opt;
 
-static volatile sig_atomic_t hup_flag;
+static volatile sig_atomic_t hup_flag = 0;
 
 int log_init(const LogOpt *opts){ 
     memcpy(&g_opt, opts, sizeof(LogOpt));
@@ -67,7 +68,7 @@ int log_init(const LogOpt *opts){
 void log_write(LogLevel level, const char *format, ...){
     if (g_fd <= 0){
         fprintf(stderr, "Error: file descriptor error\n");
-        exit(EXIT_FAILURE);
+        return; // exit
     }
     lock_file(F_WRLCK);
     // write msg
@@ -81,6 +82,24 @@ void log_write(LogLevel level, const char *format, ...){
     }
 
     lock_file(F_UNLCK);
+}
+static void rotate_log_file(void){
+    if (!(g_opt.sink & LOG_SINK_FILE))
+        return;
+    if (g_fd < 0)
+        return;    
+
+    pthread_mutex_lock(&g_mutex);
+    
+    close(g_fd);
+    if ((g_fd = open(g_opt.file_path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644)) < 0){
+        fprintf(stderr, "%s: log file rotation failed\n", g_opt.file_path);
+        pthread_mutex_unlock(&g_mutex);
+        return; // exit
+    }
+    hup_flag = 0;
+    pthread_mutex_unlock(&g_mutex);
+    return; 
 }
 static void hup_handler(int sig){
     (void)sig;
