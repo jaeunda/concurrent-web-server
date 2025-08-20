@@ -118,7 +118,7 @@ void log_write(LogLevel level, const char *format, ...){
     va_end(args);
 
     char log_buffer[BUFFER_SIZE];
-    memset((char *)log_buffer, 0, sizeof(str_buffer));
+    memset((char *)log_buffer, 0, sizeof(log_buffer));
     snprintf(log_buffer, sizeof(log_buffer), "[%s][%s][%d][%lu] %s\n", get_timestamp(), get_LogLevel(level), (int)getpid(), (unsigned long)pthread_self(), str_buffer);
 
     pthread_mutex_lock(&g_mutex);
