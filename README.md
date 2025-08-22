@@ -27,9 +27,9 @@ epoll-web-server
 
 | Module                             | Status  |
 | ---------------------------------- | ------- |
-| [Core Module Development](https://github.com/jaeunda/epoll-web-server/milestone/1)            | In Progress |
+| [Core Module Development](https://github.com/jaeunda/epoll-web-server/milestone/1)            | Completed |
 | Config Module Development          | Planned |
-| Socket Module Implementation       | Planned |
+| [Socket Module Implementation](https://github.com/jaeunda/epoll-web-server/milestone/3)       | In Progress |
 | HTTP Module Implementation         | Planned |
 | Client Module Development          | Planned |
 | Server Module Implementation       | Planned |
@@ -37,12 +37,37 @@ epoll-web-server
 | Thread Pool Module Implementation  | Planned |
 | Epoll Module Implementation        | Planned |
 | Benchmarking Module Implementation | Planned |
-| [DevOps and Automation](https://github.com/jaeunda/epoll-web-server/milestone/11)              | In Progress |
+| [DevOps and Automation](https://github.com/jaeunda/epoll-web-server/milestone/11)              | Completed |
 
 
 
 ### Build & Run
-will be added after initial implemented is complete.
+```
+$ git clone https://github.com/jaeunda/epoll-web-server.git
+$ make run
+
+$ make clean
+```
+#### Build Commands
+```
+$ make help
+Usage: make [target]
+
+== MAIN TARGETS ==
+  all           Build all executables (default)
+  run           Run the main launcher
+  clean         Remove all build artifacts
+  help          Show this help message
+== DEBUGGING TARGETS ==
+  block         Run the blocking server
+  multi         Run the multi-thread server
+  pool          Run the thread-pool server
+  epoll         Run the epoll server
+
+  You can override arguments like this:
+   make epoll PORT=9090 IP=0.0.0.0
+```
+
 
 
 
