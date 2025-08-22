@@ -1,7 +1,7 @@
 ---
 name: Issue Template
 about: Use this template for issue
-title: "[]: "
+title: "[] : "
 assignees: jaeunda
 ---
 ## Goals
@@ -9,7 +9,9 @@ assignees: jaeunda
 
 ## Task Details
 - [ ]
--
+- [ ]
+
+## Definition of Done
 - [ ]
 
 ## Dependencies
